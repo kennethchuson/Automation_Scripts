@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hello Flask</title>
+</head>
+<body>
+    <h1>Welcome {{ name }}!</h1>
+
+    <h3>Click link to pass data using URL:</h3>
+    <a href="/hello/{{ name }}">Go to /hello route with name</a>
+
+    <h3>Click link to test redirect:</h3>
+    <a href="/redirect-user">Redirect to hello route</a>
+
+    <h3>CLick to use AI</h3>
+    <a href="/ask">Activate AI</a>
+
+    <h3>Submit Form to Communicate Routes:</h3>
+    <form action="/greet" method="POST">
+        <input type="text" name="user" placeholder="Enter your name">
+        <button type="submit">Submit</button>
+    </form>
+
+</body>
+</html>
