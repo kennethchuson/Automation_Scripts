@@ -1,5 +1,8 @@
 from flask import Flask, render_template, request
 from markupsafe import Markup
+import requests
+import subprocess
+from flask import jsonify 
 import ollama
 import json
 import re
@@ -37,6 +40,11 @@ def greet():
 
 
 
+
+
+
+
+#AI Generate Website
 
 @app.route("/ask", methods=["GET", "POST"])
 def ask():

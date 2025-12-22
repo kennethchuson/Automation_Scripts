@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML MCP Client (SDK Server)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        textarea, pre { width: 100%; min-height: 150px; }
+        button { margin: 0.5rem 0.5rem 0 0; }
+        #log { background: #f0f0f0; padding: 1rem; max-height: 500px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>MCP Client (HTML + SDK Server)</h1>
+    <p>Server: <a href="http://localhost:8000/mcp" target="_blank">Inspector UI</a> | Status: <span id="status">Ready</span></p>
+
+    <h2>Call Tools</h2>
+    <button onclick="callTool('list_files', {directory: '.'})">list_files (current dir)</button>
+    <button onclick="callTool('list_files', {directory: '/etc'})">list_files (/etc)</button>
+    <button onclick="readFilePrompt()">read_file (prompt path)</button>
+    <button onclick="fetchResource()">Fetch Greeting Resource</button>
+
+    <h2>Raw JSON-RPC</h2>
+    <textarea id="rawInput" placeholder='{"jsonrpc":"2.0","method":"list_tools","params":{},"id":1}'></textarea><br>
+    <button onclick="sendRaw()">Send Raw</button>
+
+    <h2>Log</h2>
+    <pre id="log"></pre>
+
+<script>
+    const SERVER_URL = 'http://localhost:8000/mcp';
+    let requestId = 1;
+
+    async function mcpRequest(method, params = {}, id = null) {
+        const payload = {
+            jsonrpc: '2.0',
+            method,
+            params,
+            id: id || requestId++
+        };
+        const response = await fetch(SERVER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    }
+
+    async function callTool(name, arguments) {
+        try {
+            const result = await mcpRequest('call_tool', { name, arguments });
+            log(`Tool ${name} result: ${JSON.stringify(result.result, null, 2)}`);
+        } catch (e) {
+            log(`Error calling ${name}: ${e.message}`);
+        }
+    }
+
+    async function fetchResource() {
+        const name = prompt("Enter name for greeting:", "World");
+        if (name) {
+            try {
+                const result = await mcpRequest('read_resource', { uri: `greeting://${name}` });
+                log(`Resource result: ${JSON.stringify(result.result, null, 2)}`);
+            } catch (e) {
+                log(`Error fetching resource: ${e.message}`);
+            }
+        }
+    }
+
+    function readFilePrompt() {
+        const path = prompt("Enter file path to read:", "server.py");
+        if (path) {
+            callTool('read_file', { filepath: path });
+        }
+    }
+
+    async function sendRaw() {
+        const input = document.getElementById('rawInput').value.trim();
+        if (input) {
+            try {
+                const result = await fetch(SERVER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: input
+                });
+                const data = await result.json();
+                log('→ Raw: ' + input);
+                log('← Response: ' + JSON.stringify(data, null, 2));
+                document.getElementById('rawInput').value = '';
+            } catch (e) {
+                log('Error: ' + e.message);
+            }
+        }
+    }
+
+    function log(text) {
+        const div = document.createElement('div');
+        div.textContent = new Date().toLocaleTimeString() + ' ' + text;
+        document.getElementById('log').appendChild(div);
+        div.scrollIntoView(false);
+    }
+
+    // Auto-initialize on load
+    window.onload = async () => {
+        try {
+            const init = await mcpRequest('initialize');
+            log('Initialized: ' + JSON.stringify(init.result, null, 2));
+        } catch (e) {
+            log('Init error: ' + e.message);
+        }
+    };
+</script>
+</body>
+</html>
